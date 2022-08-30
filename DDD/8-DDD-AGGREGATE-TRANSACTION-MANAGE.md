@@ -45,6 +45,37 @@ JPA 에서는 Entity#find() 메서드로 엔티티를 구할 때 강제로 버�
 LockModeType.OPTIMISTIC_FORCE_INCREMENT 를 사용하면 해당 엔티티의 상태가 변경되었는지에 상관없이 트랜잭션 종료 시점에 버전 값을 증가 처리 한다. 
 
 ## 8.4 오프라인 선점 잠금 
+오프라인 선점 잠금은 여러 트랜잭션에 걸쳐 동시 변경을 막는다. 
+첫 번째 트랜잭션을 시작할 때 오프라인 잠금을 선점하고, 마지막 트랜잭션에서 잠금을 해제한다. 
+잠금을 해제하기 전까지 다른 사용자는 잠금을 구할 수 없다. 
+선점 사용자가 수정 요청을 수행하지 않고 프로그램을 종료하면 다른 사용자는 영원히 잠금을 구할 수 없는 상황이 올 수도 있다. 
+이를 방지하기 위해 오프라인 선점 방식은 잠금 유효 시간을 가져야한다. 
+잠금 유효 시간은 일정 주기로 유효 시간을 증가시키는 방식이 필요하다. 
+
 ### 8.4.1 오프라인 선점 잠금을 위한 LockManager 인터페이스와 관련 클래스 
+오프라인 선점 잠금은 크게 잠금 선점 시도, 잠금 확인, 잠금 해제, 잠금 유효 시간 연장의 네 가지 기능이 필요하다. 
+LockManager#TryLock() 을 이용해서 잠금을 시도 한다. 
+잠금을 선점하는데 실패하면 LockException을 발생시킨다. 
+LockManager#CheckLock() 을 실행하여 잠금이 유효한지 확인한다. 
+- 잠금 유효 시간이 지낚으면 이미 다른 사용자가 잠금을 선점한다. 
+- 잠금을 선점하지 않은 사용자가 기능을 실행했다면 기능 실행을 막아야 한다. 
+
+
 ### 8.4.2 DB를 이용한 LockManager 구현 
+잠금 정보를 저장하기 위한 테이블을 생성한다. ex) locks
+```sql
+create table locks(
+	`type` varchar(255),
+	id varchar(255),
+	lockid varchar(255),
+	expiration_time datetime,
+	primary key (`type`,id)
+
+) character set utf8;
+
+create unique index locks_idx ON locks (lockid);
+```
+
+
+
 
